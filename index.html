@@ -33,56 +33,82 @@
 
 <script>
 
-const API_URL = "https://script.google.com/macros/s/AKfycbzu58fcJK6eEsP0ahHWL8il0_povS95VV94buJVCok_9lgp--7eTfPHrmzAmg6O6TJ9pw/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycby_TGqxSe27hTqvabVdVa1MqHp1edaPjn-ozek_1DLdsTqakiY_4ySpO10G8g7jJyQnmw/exec";
 
-const map = L.map('map').setView([9.9281, -84.0907], 9);
+// COSTA RICA
+const bounds = [[8.0, -86.5],[11.5, -82.5]];
+
+const map = L.map('map', {
+  maxBounds: bounds,
+  maxBoundsViscosity: 1
+}).fitBounds(bounds);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-// 🔥 COORDS
-function extraerCoords(link) {
-  try {
-    let match = link.match(/q=(-?\d+\.\d+),(-?\d+\.\d+)/);
-    if (match) return [parseFloat(match[1]), parseFloat(match[2])];
+// 🔥 GEOCODING (provincia + cantón)
+async function obtenerCoords(provincia, canton) {
+  const query = `${canton}, ${provincia}, Costa Rica`;
 
-    match = link.match(/ll=(-?\d+\.\d+),(-?\d+\.\d+)/);
-    if (match) return [parseFloat(match[1]), parseFloat(match[2])];
+  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`;
 
-  } catch (e) {}
+  const res = await fetch(url);
+  const data = await res.json();
+
+  if (data.length > 0) {
+    return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+  }
 
   return null;
 }
 
-// 🔥 LOAD
+// 🔥 MARCAR ENTREGADO
+async function marcarEntregado(cliente) {
+  await fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({ cliente })
+  });
+
+  alert("Entregado ✅");
+  location.reload();
+}
+
+// 🔥 CARGAR DATOS
 async function loadData() {
   const res = await fetch(API_URL);
   const data = await res.json();
 
-  let offset = 0;
-
   for (let item of data) {
 
-    const link = item["Ubicacion digital"];
     const cliente = item["Cliente"];
-    const estado = item["Estado del Envio"];
+    const provincia = item["Provincia"];
+    const canton = item["Canton"];
+    const link = item["Ubicacion Digital"];
+    const estado = (item["Estado del Envio"] || "").toLowerCase();
+    const ruta = (item["Ruta"] || "").toLowerCase();
 
-    let coords = extraerCoords(link);
+    if (!ruta.includes("si")) continue;
 
-    // si no hay coords → los separa
-    if (!coords) {
-      coords = [9.9281 + offset * 0.01, -84.0907 + offset * 0.01];
-      offset++;
-    }
+    let color = "red";
+    if (estado.includes("entregado")) color = "green";
+
+    const coords = await obtenerCoords(provincia, canton);
+    if (!coords) continue;
 
     const marker = L.circleMarker(coords, {
-      color: "red",
-      radius: 8
+      color: color,
+      radius: 10
     }).addTo(map);
 
     marker.bindPopup(`
       <b>${cliente}</b><br>
-      Estado: ${estado}<br>
-      <a href="${link}" target="_blank">Abrir ubicación</a>
+      ${canton}, ${provincia}<br>
+      Estado: ${estado}<br><br>
+
+      <a href="${link}" target="_blank">📍 Abrir ubicación</a><br><br>
+
+      <button onclick="marcarEntregado('${cliente}')">
+        ✅ Marcar Entregado
+      </button>
     `);
   }
 }
