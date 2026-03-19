@@ -86,7 +86,44 @@ async function loadData() {
     const ruta = (item["Ruta"] || "").toLowerCase();
 
     // 👇 NUEVO: columna G
-    const entregado = (item["Entregado"] || "").toLowerCase();
+   let botonHTML = "";
+
+if (entregado.includes("entregado")) {
+  botonHTML = `
+    <button style="
+      background: green;
+      color: white;
+      border: none;
+      padding: 8px;
+      border-radius: 5px;
+      cursor: not-allowed;
+    " disabled>
+      ✅ Entregado
+    </button>
+  `;
+} else {
+  botonHTML = `
+    <button onclick="marcarEntregado('${cliente}')" style="
+      background: red;
+      color: white;
+      border: none;
+      padding: 8px;
+      border-radius: 5px;
+      cursor: pointer;
+    ">
+      Marcar Entregado
+    </button>
+  `;
+}
+
+marker.bindPopup(`
+  <b>${cliente}</b><br>
+  ${canton}, ${provincia}<br><br>
+
+  <a href="${link}" target="_blank">📍 Abrir ubicación</a><br><br>
+
+  ${botonHTML}
+`);
 
     if (!ruta.includes("si")) continue;
 
