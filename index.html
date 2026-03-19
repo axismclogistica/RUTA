@@ -20,6 +20,7 @@
       border-radius: 10px;
       z-index: 1000;
       font-weight: bold;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
     }
   </style>
 </head>
@@ -32,21 +33,20 @@
 
 <script>
 
-const API_URL = "https://script.google.com/macros/s/AKfycbzDtggKX3qd4UwlpbJtkcvLRKT4tswGcz_uAephXHlgav2HKieZeLD4XUxbVfXg-NUP4Q/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbzDMM3SecpdIkqiOgov816ycnGVds6Rs_qsYKcScqTyIxOomki1-PG2AaJdKZrAqkgElg/exec";
 
+// Mapa Costa Rica
 const map = L.map('map').setView([9.9281, -84.0907], 8);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 }).addTo(map);
 
-// 🔥 EXTRAER COORDENADAS INTELIGENTE
+// 🔥 EXTRAER COORDENADAS
 function extraerCoords(link) {
   try {
-    // Google Maps
     let match = link.match(/q=(-?\d+\.\d+),(-?\d+\.\d+)/);
     if (match) return [parseFloat(match[1]), parseFloat(match[2])];
 
-    // Waze con coords
     match = link.match(/ll=(-?\d+\.\d+),(-?\d+\.\d+)/);
     if (match) return [parseFloat(match[1]), parseFloat(match[2])];
 
@@ -73,40 +73,26 @@ async function loadData() {
 
   for (let item of data) {
 
+    if (
+      !item["Ruta"] || item["Ruta"].toLowerCase() !== "si" ||
+      !item["Estado del envio"] || item["Estado del envio"].toLowerCase() !== "pendiente de entrega"
+    ) continue;
+
     const link = item["Ubicacion digital"];
-    const estado = item["Estado del envio"];
     const cliente = item["Cliente"];
 
     const coords = extraerCoords(link);
-
-    // 🔴 SI NO HAY COORDS → SOLO LINK
-    if (!coords) {
-
-      const marker = L.marker([9.9281, -84.0907]).addTo(map);
-
-      marker.bindPopup(`
-        <b>${cliente}</b><br>
-        <a href="${link}" target="_blank">Abrir en Waze/Maps</a><br>
-        Estado: ${estado}<br><br>
-        <button onclick="marcarEntregado('${cliente}')">Marcar Entregado</button>
-      `);
-
-      continue;
-    }
-
-    let color = "red";
-    if (estado.toLowerCase() === "entregado") color = "green";
-    if (estado.toLowerCase() === "en ruta") color = "orange";
+    if (!coords) continue;
 
     const marker = L.circleMarker(coords, {
-      color: color,
+      color: "red",
       radius: 8
     }).addTo(map);
 
     marker.bindPopup(`
       <b>${cliente}</b><br>
       <a href="${link}" target="_blank">Abrir ubicación</a><br>
-      Estado: ${estado}<br><br>
+      Estado: Pendiente<br><br>
       <button onclick="marcarEntregado('${cliente}')">Marcar Entregado</button>
     `);
   }
