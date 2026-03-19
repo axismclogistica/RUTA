@@ -33,9 +33,9 @@
 
 <script>
 
-const API_URL = "https://script.google.com/macros/s/AKfycbz8AurVoeEuQJti6OWRdXROlef7PYhpBNtPZfR-kbpNJCMTH45sVvzLGxs__ie9rWH0/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbyP744AldJibxfjKAgoMz8f36svK1DeG1cwhcDgjqyT4BiIj9SetsBxE4S3Fqv6WetC/exec";
 
-// Mapa Costa Rica
+// Mapa CR
 const map = L.map('map').setView([9.9281, -84.0907], 8);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
@@ -70,6 +70,8 @@ async function loadData() {
   const res = await fetch(API_URL);
   const data = await res.json();
 
+  console.log(data); // debug
+
   for (let item of data) {
 
     const link = item["Ubicacion digital"];
@@ -78,7 +80,7 @@ async function loadData() {
 
     const coords = extraerCoords(link);
 
-    // 🔥 SI NO HAY COORDENADAS → LO PONE EN CR CENTRO
+    // Si no hay coords → centro CR
     let latlng = coords || [9.9281, -84.0907];
 
     const marker = L.circleMarker(latlng, {
@@ -95,7 +97,7 @@ async function loadData() {
   }
 }
 
-// 🔄 REFRESH AUTOMÁTICO
+// 🔄 AUTO REFRESH
 setInterval(() => location.reload(), 30000);
 
 loadData();
