@@ -33,7 +33,7 @@
 
 <script>
 
-const API_URL = "https://script.google.com/macros/s/AKfycby_TGqxSe27hTqvabVdVa1MqHp1edaPjn-ozek_1DLdsTqakiY_4ySpO10G8g7jJyQnmw/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbyU55N8lchifuvQyXtnwY0t6N6SVmwl_nAPQBvqzu08UGa39xz5NYKU9XkZIDwCqDbQyw/exec";
 
 // COSTA RICA
 const bounds = [[8.0, -86.5],[11.5, -82.5]];
@@ -45,7 +45,7 @@ const map = L.map('map', {
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-// 🔥 GEOCODING (provincia + cantón)
+// 🔥 GEOCODING
 async function obtenerCoords(provincia, canton) {
   const query = `${canton}, ${provincia}, Costa Rica`;
 
@@ -72,7 +72,7 @@ async function marcarEntregado(cliente) {
   location.reload();
 }
 
-// 🔥 CARGAR DATOS
+// 🔥 CARGAR
 async function loadData() {
   const res = await fetch(API_URL);
   const data = await res.json();
@@ -83,13 +83,18 @@ async function loadData() {
     const provincia = item["Provincia"];
     const canton = item["Canton"];
     const link = item["Ubicacion Digital"];
-    const estado = (item["Estado del Envio"] || "").toLowerCase();
     const ruta = (item["Ruta"] || "").toLowerCase();
+
+    // 👇 NUEVO: columna G
+    const entregado = (item["Entregado"] || "").toLowerCase();
 
     if (!ruta.includes("si")) continue;
 
     let color = "red";
-    if (estado.includes("entregado")) color = "green";
+
+    if (entregado.includes("entregado")) {
+      color = "green";
+    }
 
     const coords = await obtenerCoords(provincia, canton);
     if (!coords) continue;
@@ -101,8 +106,7 @@ async function loadData() {
 
     marker.bindPopup(`
       <b>${cliente}</b><br>
-      ${canton}, ${provincia}<br>
-      Estado: ${estado}<br><br>
+      ${canton}, ${provincia}<br><br>
 
       <a href="${link}" target="_blank">📍 Abrir ubicación</a><br><br>
 
