@@ -33,12 +33,13 @@
 
 <script>
 
-const API_URL = "https://script.google.com/macros/s/AKfycbwPLMtl_yKPe4olQOIcL8efrRiCbPzuf2eE8_LyTA0zLYICM5Hee6ctzGU0GhfvKVNaeQ/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbzu58fcJK6eEsP0ahHWL8il0_povS95VV94buJVCok_9lgp--7eTfPHrmzAmg6O6TJ9pw/exec";
 
 const map = L.map('map').setView([9.9281, -84.0907], 9);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
+// 🔥 COORDS
 function extraerCoords(link) {
   try {
     let match = link.match(/q=(-?\d+\.\d+),(-?\d+\.\d+)/);
@@ -52,6 +53,7 @@ function extraerCoords(link) {
   return null;
 }
 
+// 🔥 LOAD
 async function loadData() {
   const res = await fetch(API_URL);
   const data = await res.json();
@@ -64,16 +66,11 @@ async function loadData() {
     const cliente = item["Cliente"];
     const estado = item["Estado del Envio"];
 
-    // 🔥 SOLO pendientes en ruta
-    const ruta = (item["Ruta"] || "").toLowerCase();
-    const estadoTxt = (estado || "").toLowerCase();
-
-    if (!ruta.includes("si") || !estadoTxt.includes("pendiente")) continue;
-
     let coords = extraerCoords(link);
 
+    // si no hay coords → los separa
     if (!coords) {
-      coords = [9.9281 + (offset * 0.01), -84.0907 + (offset * 0.01)];
+      coords = [9.9281 + offset * 0.01, -84.0907 + offset * 0.01];
       offset++;
     }
 
