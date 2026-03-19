@@ -33,7 +33,7 @@
 
 <script>
 
-const API_URL = "https://script.google.com/macros/s/AKfycbyU55N8lchifuvQyXtnwY0t6N6SVmwl_nAPQBvqzu08UGa39xz5NYKU9XkZIDwCqDbQyw/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxbgZcW9rB4o_8DXYaRCgi_TMOBlja13nb224ZSGwAba9S0ULytvsCEZ_-lGkUcLoPoEw/exec";
 
 // COSTA RICA
 const bounds = [[8.0, -86.5],[11.5, -82.5]];
@@ -45,18 +45,19 @@ const map = L.map('map', {
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-// 🔥 GEOCODING
+// 🔥 GEOCODING (Provincia + Cantón)
 async function obtenerCoords(provincia, canton) {
-  const query = `${canton}, ${provincia}, Costa Rica`;
+  try {
+    const query = `${canton}, ${provincia}, Costa Rica`;
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`;
 
-  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`;
+    const res = await fetch(url);
+    const data = await res.json();
 
-  const res = await fetch(url);
-  const data = await res.json();
-
-  if (data.length > 0) {
-    return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
-  }
+    if (data.length > 0) {
+      return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+    }
+  } catch(e) {}
 
   return null;
 }
@@ -72,7 +73,7 @@ async function marcarEntregado(cliente) {
   location.reload();
 }
 
-// 🔥 CARGAR
+// 🔥 CARGAR DATOS
 async function loadData() {
   const res = await fetch(API_URL);
   const data = await res.json();
@@ -85,53 +86,13 @@ async function loadData() {
     const link = item["Ubicacion Digital"];
     const ruta = (item["Ruta"] || "").toLowerCase();
 
-    // 👇 NUEVO: columna G
-   let botonHTML = "";
-
-if (entregado.includes("entregado")) {
-  botonHTML = `
-    <button style="
-      background: green;
-      color: white;
-      border: none;
-      padding: 8px;
-      border-radius: 5px;
-      cursor: not-allowed;
-    " disabled>
-      ✅ Entregado
-    </button>
-  `;
-} else {
-  botonHTML = `
-    <button onclick="marcarEntregado('${cliente}')" style="
-      background: red;
-      color: white;
-      border: none;
-      padding: 8px;
-      border-radius: 5px;
-      cursor: pointer;
-    ">
-      Marcar Entregado
-    </button>
-  `;
-}
-
-marker.bindPopup(`
-  <b>${cliente}</b><br>
-  ${canton}, ${provincia}<br><br>
-
-  <a href="${link}" target="_blank">📍 Abrir ubicación</a><br><br>
-
-  ${botonHTML}
-`);
+    const entregado = (item["Entregado"] || "").toLowerCase();
 
     if (!ruta.includes("si")) continue;
 
+    // 🔥 COLOR DEL PUNTO
     let color = "red";
-
-    if (entregado.includes("entregado")) {
-      color = "green";
-    }
+    if (entregado.includes("entregado")) color = "green";
 
     const coords = await obtenerCoords(provincia, canton);
     if (!coords) continue;
@@ -141,15 +102,44 @@ marker.bindPopup(`
       radius: 10
     }).addTo(map);
 
+    // 🔥 BOTÓN DINÁMICO
+    let botonHTML = "";
+
+    if (entregado.includes("entregado")) {
+      botonHTML = `
+        <button style="
+          background: green;
+          color: white;
+          border: none;
+          padding: 8px;
+          border-radius: 5px;
+          cursor: not-allowed;
+        " disabled>
+          ✅ Entregado
+        </button>
+      `;
+    } else {
+      botonHTML = `
+        <button onclick="marcarEntregado('${cliente}')" style="
+          background: red;
+          color: white;
+          border: none;
+          padding: 8px;
+          border-radius: 5px;
+          cursor: pointer;
+        ">
+          Marcar Entregado
+        </button>
+      `;
+    }
+
     marker.bindPopup(`
       <b>${cliente}</b><br>
       ${canton}, ${provincia}<br><br>
 
       <a href="${link}" target="_blank">📍 Abrir ubicación</a><br><br>
 
-      <button onclick="marcarEntregado('${cliente}')">
-        ✅ Marcar Entregado
-      </button>
+      ${botonHTML}
     `);
   }
 }
