@@ -1,22 +1,97 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8"/>
-  <title>Prueba</title>
+  <title>Axis MC Logística</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+
+  <style>
+    body { margin: 0; }
+    #map { height: 100vh; }
+
+    .logo {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      background: black;
+      color: white;
+      padding: 10px;
+      border-radius: 8px;
+      z-index: 9999;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
 
-<h1>TEST</h1>
+<div class="logo">Axis MC Logística</div>
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbyDwlOxb78EVIC6U7SqXpZHwYxa-bwUyv1WIbej2UPP2a-oOoXOpj_RsKMRyd-29L7aAw/exec";
 
-fetch(API_URL)
-  .then(res => res.json())
-  .then(data => {
-    console.log(data);
-    document.body.innerHTML += "<pre>" + JSON.stringify(data, null, 2) + "</pre>";
-  });
+const API_URL = "https://script.google.com/macros/s/AKfycbwPLMtl_yKPe4olQOIcL8efrRiCbPzuf2eE8_LyTA0zLYICM5Hee6ctzGU0GhfvKVNaeQ/exec";
+
+const map = L.map('map').setView([9.9281, -84.0907], 9);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+function extraerCoords(link) {
+  try {
+    let match = link.match(/q=(-?\d+\.\d+),(-?\d+\.\d+)/);
+    if (match) return [parseFloat(match[1]), parseFloat(match[2])];
+
+    match = link.match(/ll=(-?\d+\.\d+),(-?\d+\.\d+)/);
+    if (match) return [parseFloat(match[1]), parseFloat(match[2])];
+
+  } catch (e) {}
+
+  return null;
+}
+
+async function loadData() {
+  const res = await fetch(API_URL);
+  const data = await res.json();
+
+  let offset = 0;
+
+  for (let item of data) {
+
+    const link = item["Ubicacion digital"];
+    const cliente = item["Cliente"];
+    const estado = item["Estado del Envio"];
+
+    // 🔥 SOLO pendientes en ruta
+    const ruta = (item["Ruta"] || "").toLowerCase();
+    const estadoTxt = (estado || "").toLowerCase();
+
+    if (!ruta.includes("si") || !estadoTxt.includes("pendiente")) continue;
+
+    let coords = extraerCoords(link);
+
+    if (!coords) {
+      coords = [9.9281 + (offset * 0.01), -84.0907 + (offset * 0.01)];
+      offset++;
+    }
+
+    const marker = L.circleMarker(coords, {
+      color: "red",
+      radius: 8
+    }).addTo(map);
+
+    marker.bindPopup(`
+      <b>${cliente}</b><br>
+      Estado: ${estado}<br>
+      <a href="${link}" target="_blank">Abrir ubicación</a>
+    `);
+  }
+}
+
+loadData();
+
 </script>
 
 </body>
