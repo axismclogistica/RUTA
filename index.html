@@ -33,13 +33,12 @@
 
 <script>
 
-const API_URL = "https://script.google.com/macros/s/AKfycbzDMM3SecpdIkqiOgov816ycnGVds6Rs_qsYKcScqTyIxOomki1-PG2AaJdKZrAqkgElg/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbz8AurVoeEuQJti6OWRdXROlef7PYhpBNtPZfR-kbpNJCMTH45sVvzLGxs__ie9rWH0/exec";
 
 // Mapa Costa Rica
 const map = L.map('map').setView([9.9281, -84.0907], 8);
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-}).addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
 // 🔥 EXTRAER COORDENADAS
 function extraerCoords(link) {
@@ -73,32 +72,30 @@ async function loadData() {
 
   for (let item of data) {
 
-    if (
-      !item["Ruta"] || item["Ruta"].toLowerCase() !== "si" ||
-      !item["Estado del envio"] || item["Estado del envio"].toLowerCase() !== "pendiente de entrega"
-    ) continue;
-
     const link = item["Ubicacion digital"];
     const cliente = item["Cliente"];
+    const estado = item["Estado del envio"];
 
     const coords = extraerCoords(link);
-    if (!coords) continue;
 
-    const marker = L.circleMarker(coords, {
+    // 🔥 SI NO HAY COORDENADAS → LO PONE EN CR CENTRO
+    let latlng = coords || [9.9281, -84.0907];
+
+    const marker = L.circleMarker(latlng, {
       color: "red",
       radius: 8
     }).addTo(map);
 
     marker.bindPopup(`
       <b>${cliente}</b><br>
-      <a href="${link}" target="_blank">Abrir ubicación</a><br>
-      Estado: Pendiente<br><br>
+      Estado: ${estado}<br>
+      <a href="${link}" target="_blank">Abrir ubicación</a><br><br>
       <button onclick="marcarEntregado('${cliente}')">Marcar Entregado</button>
     `);
   }
 }
 
-// 🔄 REFRESH
+// 🔄 REFRESH AUTOMÁTICO
 setInterval(() => location.reload(), 30000);
 
 loadData();
