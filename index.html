@@ -1,26 +1,28 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Axis MC Logística - Mapa</title>
+  <title>Axis MC Logística</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 
   <style>
-    body { margin: 0; font-family: Arial; }
+    body { margin: 0; }
+
     #map { height: 100vh; }
 
     .logo {
       position: absolute;
-      top: 10px;
-      left: 10px;
-      background: white;
-      padding: 10px;
-      border-radius: 10px;
-      z-index: 1000;
+      top: 15px;
+      left: 15px;
+      background: black;
+      color: white;
+      padding: 10px 15px;
+      border-radius: 8px;
+      z-index: 9999;
       font-weight: bold;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+      font-size: 14px;
     }
   </style>
 </head>
@@ -33,14 +35,13 @@
 
 <script>
 
-const API_URL = "https://script.google.com/macros/s/AKfycbyP744AldJibxfjKAgoMz8f36svK1DeG1cwhcDgjqyT4BiIj9SetsBxE4S3Fqv6WetC/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwFLS2lidZJmux2yi1p8TznJraqE4Jvayv_ESDyVkv2mvoWFd83zxlA5m_-exBzOoEIzQ/exec";
 
-// Mapa CR
-const map = L.map('map').setView([9.9281, -84.0907], 8);
+const map = L.map('map').setView([9.9281, -84.0907], 9);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-// 🔥 EXTRAER COORDENADAS
+// 🔥 EXTRAER COORDS
 function extraerCoords(link) {
   try {
     let match = link.match(/q=(-?\d+\.\d+),(-?\d+\.\d+)/);
@@ -61,16 +62,16 @@ async function marcarEntregado(cliente) {
     body: JSON.stringify({ cliente: cliente })
   });
 
-  alert("Entrega marcada ✅");
+  alert("Entrega marcada");
   location.reload();
 }
 
-// 🔥 CARGAR DATOS
+// 🔥 CARGAR
 async function loadData() {
   const res = await fetch(API_URL);
   const data = await res.json();
 
-  console.log(data); // debug
+  let offset = 0;
 
   for (let item of data) {
 
@@ -78,12 +79,18 @@ async function loadData() {
     const cliente = item["Cliente"];
     const estado = item["Estado del envio"];
 
-    const coords = extraerCoords(link);
+    let coords = extraerCoords(link);
 
-    // Si no hay coords → centro CR
-    let latlng = coords || [9.9281, -84.0907];
+    // 🔥 SI NO HAY COORDENADAS → LOS SEPARA VISUALMENTE
+    if (!coords) {
+      coords = [
+        9.9281 + (offset * 0.01),
+        -84.0907 + (offset * 0.01)
+      ];
+      offset++;
+    }
 
-    const marker = L.circleMarker(latlng, {
+    const marker = L.circleMarker(coords, {
       color: "red",
       radius: 8
     }).addTo(map);
@@ -92,13 +99,10 @@ async function loadData() {
       <b>${cliente}</b><br>
       Estado: ${estado}<br>
       <a href="${link}" target="_blank">Abrir ubicación</a><br><br>
-      <button onclick="marcarEntregado('${cliente}')">Marcar Entregado</button>
+      <button onclick="marcarEntregado('${cliente}')">Entregado</button>
     `);
   }
 }
-
-// 🔄 AUTO REFRESH
-setInterval(() => location.reload(), 30000);
 
 loadData();
 
